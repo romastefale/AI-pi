@@ -219,23 +219,23 @@ input:focus-visible { outline: none; }
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    z-index: 50;
+    z-index: 9999;
     pointer-events: none;
 }
 
 .top-bar * { pointer-events: auto; }
 
 .menu-btn {
-    position: absolute;
+    position: fixed;
     top: 16px;
     left: 20px;
-    z-index: 1000;
+    z-index: 9999;
     width: 44px;
     height: 44px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.6);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     display: flex;
