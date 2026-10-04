@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>AI-pi</title>
 
 <style>
@@ -27,7 +27,9 @@ html, body {
     width: 100%;
     height: 100%;
     position: fixed;
+    inset: 0;
     overflow: hidden;
+    overscroll-behavior: none;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
@@ -41,9 +43,11 @@ input:focus-visible { outline: none; }
 
 .app {
     display: flex;
-    width: 100vw;
-    height: 100vh;
-    position: relative;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
     background: transparent;
 }
 
@@ -232,10 +236,8 @@ input:focus-visible { outline: none; }
     left: 20px !important;
     right: auto !important;
     bottom: auto !important;
-    inset: 16px auto auto 20px !important;
     z-index: 2147483647 !important;
     transform: none !important;
-    translate: none !important;
     margin: 0 !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -255,7 +257,7 @@ input:focus-visible { outline: none; }
     justify-content: center;
     gap: 5px;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+    transition: box-shadow 0.15s ease, background 0.3s ease;
 }
 
 .menu-btn:active { transform: none !important; }
@@ -276,7 +278,10 @@ input:focus-visible { outline: none; }
 
 .chat-area {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 80px 20px 120px;
     display: flex;
     flex-direction: column;
@@ -508,6 +513,7 @@ input:focus-visible { outline: none; }
 .composer-container {
     position: fixed;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: none;
     left: 0;
     right: 0;
     padding: 0 16px;
@@ -1406,6 +1412,26 @@ fileInput.addEventListener('change', async () => {
 });
 
 window.addEventListener('resize', scrollBottom);
+
+
+function pinChrome() {
+    const vv = window.visualViewport;
+    const offsetTop = vv ? vv.offsetTop : 0;
+    const offsetLeft = vv ? vv.offsetLeft : 0;
+    menuBtn.style.top = (offsetTop + 16) + 'px';
+    menuBtn.style.left = (offsetLeft + 20) + 'px';
+    const keyboard = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    const composer = document.querySelector('.composer-container');
+    if (composer) composer.style.bottom = (keyboard + 24) + 'px';
+    if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+}
+pinChrome();
+if (window.visualViewport) {
+    visualViewport.addEventListener('resize', pinChrome);
+    visualViewport.addEventListener('scroll', pinChrome);
+}
+window.addEventListener('scroll', pinChrome, { passive: true });
+messageInput.addEventListener('focus', pinChrome);
 
 /* Inicialização */
 loadTheme();
