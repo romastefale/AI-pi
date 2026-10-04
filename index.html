@@ -227,10 +227,20 @@ input:focus-visible { outline: none; }
 .top-bar * { pointer-events: auto; }
 
 .menu-btn {
-    position: fixed;
-    top: 16px;
-    left: 20px;
-    z-index: 9999;
+    position: fixed !important;
+    top: 16px !important;
+    left: 20px !important;
+    right: auto !important;
+    bottom: auto !important;
+    inset: 16px auto auto 20px !important;
+    z-index: 2147483647 !important;
+    transform: none !important;
+    translate: none !important;
+    margin: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: flex !important;
+    pointer-events: auto !important;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -248,7 +258,7 @@ input:focus-visible { outline: none; }
     transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
 }
 
-.menu-btn:active { transform: scale(0.95); }
+.menu-btn:active { transform: none !important; }
 
 .menu-line {
     width: 16px;
@@ -723,6 +733,12 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 
 <body>
 
+<button class="menu-btn" id="menuBtn" title="Menu" aria-label="Abrir menu">
+    <div class="menu-line"></div>
+    <div class="menu-line short"></div>
+</button>
+
+
 <div class="app">
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -766,12 +782,7 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 
     <main class="main-content">
 
-        <header class="top-bar">
-            <button class="menu-btn" id="menuBtn" title="Menu" aria-label="Abrir menu">
-                <div class="menu-line"></div>
-                <div class="menu-line short"></div>
-            </button>
-        </header>
+        <header class="top-bar"></header>
 
         <section class="chat-area" id="chatArea">
             <div class="messages-list" id="messagesList"></div>
