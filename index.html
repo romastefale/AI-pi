@@ -5,6 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>AI-pi</title>
 <meta name="theme-color" content="#000000">
+<meta name="description" content="AI-pi: assistente pessoal de IA.">
+
+<!-- Instalar na tela inicial (Safari e Chrome) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="application-name" content="AI-pi">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AI-pi">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<!-- Prévia do link (WhatsApp, iMessage, Telegram etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AI-pi">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="AI-pi">
+<meta property="og:description" content="Assistente pessoal de IA.">
+<meta property="og:url" content="https://romastefale.github.io/AI-pi/">
+<meta property="og:image" content="https://romastefale.github.io/AI-pi/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta property="og:image:alt" content="AI-pi">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AI-pi">
+<meta name="twitter:description" content="Assistente pessoal de IA.">
+<meta name="twitter:image" content="https://romastefale.github.io/AI-pi/og-image.jpg">
 
 <style>
 * {
@@ -634,6 +661,14 @@ input:focus-visible { outline: none; }
 }
 
 .sheet-item:hover { background: rgba(0, 0, 0, 0.05); }
+
+/* O <html> segue o tema: o navegador usa a cor dele (e do body) para pintar a barra */
+html { color-scheme: light; }
+html.dark-theme {
+    --bg-main: #000000;
+    background-color: #000000;
+    color-scheme: dark;
+}
 
 /* DARK THEME */
 body.dark-theme {
@@ -1286,10 +1321,20 @@ function updateSendState() {
     }
 }
 
+// Remove e recria a meta: alguns navegadores só releem a cor quando a tag é nova.
+function syncThemeColor(dark) {
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = dark ? '#000000' : '#ffffff';
+    document.head.appendChild(meta);
+}
+
 function setTheme(dark) {
     document.body.classList.toggle('dark-theme', dark);
     localStorage.setItem(THEME_STORAGE_KEY, dark ? 'dark' : 'light');
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#ffffff');
+    document.documentElement.classList.toggle('dark-theme', dark);
+    syncThemeColor(dark);
 
     if (dark) {
         themeIconSidebar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`;
@@ -1485,6 +1530,13 @@ renderAll();
 updateSendState();
 syncViewport();
 focusInput();
+
+/* Service worker: permite instalar na tela inicial e abrir sem internet */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+}
 </script>
 </body>
 </html>
