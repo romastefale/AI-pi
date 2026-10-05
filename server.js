@@ -1,14 +1,22 @@
 const http = require('http');
 
 const PORT = Number(process.env.PORT) || 3000;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY || '').trim();
 const MAX_BODY_BYTES = 256 * 1024;
 const REQUEST_TIMEOUT_MS = 60_000;
+const DEFAULT_MODEL = 'openrouter/free';
+
+// ALLOWED_ORIGIN: '*' (padrão) ou uma ou mais origens separadas por vírgula.
+// Use só a origem, sem caminho e sem barra final. Ex.: https://romastefale.github.io
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || '*')
+  .split(',')
+  .map(o => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+const ALLOW_ALL = ALLOWED_ORIGINS.includes('*');
 
 function corsOrigin(requestOrigin) {
-  if (ALLOWED_ORIGIN === '*') return '*';
-  return requestOrigin === ALLOWED_ORIGIN ? ALLOWED_ORIGIN : null;
+  if (ALLOW_ALL) return '*';
+  return ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : null;
 }
 
 function sendJson(res, status, data, origin) {
@@ -28,12 +36,22 @@ function sendJson(res, status, data, origin) {
   res.end(JSON.stringify(data));
 }
 
+// Mesmo formato de erro do OpenRouter: { error: { message } }
+function sendError(res, status, message, origin) {
+  return sendJson(res, status, { error: { message } }, origin);
+}
+
 const server = http.createServer(async (req, res) => {
   const requestOrigin = req.headers.origin || '';
   const origin = corsOrigin(requestOrigin);
+  const path = (req.url || '').split('?')[0];
+
+  if (req.method === 'GET' && path === '/health') {
+    return sendJson(res, 200, { ok: true, keyConfigured: Boolean(OPENROUTER_API_KEY) }, origin);
+  }
 
   if (req.method === 'OPTIONS') {
-    if (!origin) return sendJson(res, 403, { error: 'Origem não autorizada.' }, null);
+    if (!origin) return sendError(res, 403, 'Origem não autorizada.', null);
     res.writeHead(204, {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -44,31 +62,35 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  if (req.url !== '/api/chat') {
-    return sendJson(res, 404, { error: 'Not found' }, origin);
+  if (path !== '/api/chat') {
+    return sendError(res, 404, 'Not found', origin);
   }
 
   if (req.method !== 'POST') {
-    return sendJson(res, 405, { error: 'Método não permitido.' }, origin);
+    return sendError(res, 405, 'Método não permitido.', origin);
   }
 
   if (!origin) {
-    return sendJson(res, 403, { error: 'Origem não autorizada.' }, null);
+    console.warn(`Origem bloqueada: "${requestOrigin}". Permitidas: ${ALLOWED_ORIGINS.join(', ')}`);
+    return sendError(res, 403, 'Origem não autorizada.', null);
   }
 
   if (!OPENROUTER_API_KEY) {
-    return sendJson(res, 500, { error: 'OPENROUTER_API_KEY não configurada no Railway.' }, origin);
+    return sendError(res, 500, 'OPENROUTER_API_KEY não configurada no Railway.', origin);
   }
 
   const contentType = String(req.headers['content-type'] || '').toLowerCase();
   if (!contentType.includes('application/json')) {
-    return sendJson(res, 415, { error: 'Content-Type deve ser application/json.' }, origin);
+    return sendError(res, 415, 'Content-Type deve ser application/json.', origin);
   }
 
   const declaredLength = Number(req.headers['content-length']);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
-    return sendJson(res, 413, { error: 'Requisição muito grande.' }, origin);
+    return sendError(res, 413, 'Requisição muito grande.', origin);
   }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
     let body = '';
@@ -85,53 +107,59 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (tooLarge) {
-      return sendJson(res, 413, { error: 'Requisição muito grande.' }, origin);
+      return sendError(res, 413, 'Requisição muito grande.', origin);
     }
 
     const payload = JSON.parse(body || '{}');
     const messages = Array.isArray(payload.messages) ? payload.messages : null;
 
     if (!messages) {
-      return sendJson(res, 400, { error: 'Campo messages inválido.' }, origin);
+      return sendError(res, 400, 'Campo messages inválido.', origin);
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': ALLOW_ALL ? 'https://github.com' : ALLOWED_ORIGINS[0],
+        'X-Title': 'AI-pi',
+      },
+      body: JSON.stringify({
+        model: typeof payload.model === 'string' && payload.model ? payload.model : DEFAULT_MODEL,
+        messages,
+      }),
+      signal: controller.signal,
+    });
 
-    let response;
+    const raw = await response.text();
+    let data;
     try {
-      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': ALLOWED_ORIGIN === '*' ? 'https://github.com' : ALLOWED_ORIGIN,
-          'X-Title': 'AI-pi',
-        },
-        body: JSON.stringify({
-          model: typeof payload.model === 'string' && payload.model ? payload.model : 'openrouter/free',
-          messages,
-        }),
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
+      data = JSON.parse(raw);
+    } catch {
+      data = { error: { message: `Resposta inválida do OpenRouter (HTTP ${response.status}).` } };
     }
 
-    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      // Aparece nos logs do Railway para facilitar o diagnóstico.
+      console.error(`OpenRouter HTTP ${response.status}:`, raw.slice(0, 500));
+    }
+
     return sendJson(res, response.status, data, origin);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return sendJson(res, 400, { error: 'JSON inválido.' }, origin);
+      return sendError(res, 400, 'JSON inválido.', origin);
     }
     if (error?.name === 'AbortError') {
-      return sendJson(res, 504, { error: 'A API demorou demais para responder.' }, origin);
+      return sendError(res, 504, 'A API demorou demais para responder.', origin);
     }
     console.error(error);
-    return sendJson(res, 500, { error: 'Erro interno no proxy.' }, origin);
+    return sendError(res, 502, `Falha ao contatar o OpenRouter: ${error?.message || 'erro desconhecido'}`, origin);
+  } finally {
+    clearTimeout(timeout);
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`AI-pi proxy rodando na porta ${PORT}`);
 });
