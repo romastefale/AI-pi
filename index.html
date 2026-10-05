@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>AI-pi</title>
+<meta name="theme-color" content="#000000">
 
 <style>
 * {
@@ -673,6 +674,7 @@ body.dark-theme .sheet-item { color: #fafafa; }
 body.dark-theme .sheet-item:hover { background: rgba(255, 255, 255, 0.1); }
 body.dark-theme .user-bubble { background: var(--user-msg-bg); color: #fceddc; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
 body.dark-theme .user-bubble::after { background: var(--user-msg-bg); }
+body.dark-theme .welcome-mark { background: var(--user-msg-bg); color: #fceddc; }
 body.dark-theme .assistant-response { color: #fafafa; }
 body.dark-theme .suggestion-row button { background: rgba(38,38,38,.85); border-color: rgba(255,255,255,.1); color: #d4d4d4; }
 body.dark-theme .suggestion-row button:hover { background: rgba(255,255,255,.1); }
@@ -766,26 +768,28 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
         </section>
 
         <div class="attachment-sheet" id="attachmentSheet">
-            <div class="sheet-item" id="attachmentFile">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                </svg>
-                Copiar conversa
-            </div>
-            <div class="sheet-item" id="attachmentNewChat">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                </svg>
-                Exportar conversa
-            </div>
-            <div class="sheet-item" id="attachmentInfo">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <div class="sheet-item" id="attachmentClear">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
                 </svg>
                 Limpar conversa
+            </div>
+            <div class="sheet-item" id="attachmentExport">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Exportar conversa (.txt)
+            </div>
+            <div class="sheet-item" id="attachmentFile">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+                Anexar arquivo (.txt)
             </div>
         </div>
 
@@ -815,7 +819,7 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
     </main>
 
     <div id="toast" style="position:absolute;z-index:120;left:50%;bottom:95px;transform:translate(-50%,10px);padding:9px 12px;background:#222;color:#fff;border-radius:11px;font-size:11px;opacity:0;pointer-events:none;transition:.18s ease;">Mensagem</div>
-    <input id="fileInput" type="file" class="hidden" accept=".txt,.md,.csv,.json,.html,.css,.js" />
+    <input id="fileInput" type="file" class="hidden" accept=".txt,text/plain" />
 
 </div>
 
@@ -852,8 +856,8 @@ const sendBtn = document.getElementById('sendBtn');
 const sendArrowIcon = document.getElementById('sendArrowIcon');
 const sendStopIcon = document.getElementById('sendStopIcon');
 const attachmentFile = document.getElementById('attachmentFile');
-const attachmentNewChat = document.getElementById('attachmentNewChat');
-const attachmentInfo = document.getElementById('attachmentInfo');
+const attachmentClear = document.getElementById('attachmentClear');
+const attachmentExport = document.getElementById('attachmentExport');
 const fileInput = document.getElementById('fileInput');
 const toastEl = document.getElementById('toast');
 
@@ -879,8 +883,10 @@ function escapeHTML(value) {
 }
 
 function shortTitle(text) {
-    const clean = text.trim().replace(/\s+/g, ' ');
-    return clean.length > 36 ? clean.slice(0, 36).trim() + '…' : clean || 'Nova conversa';
+    const clean = String(text || '').trim().replace(/\s+/g, ' ');
+    if (!clean) return 'Nova conversa';
+    const title = clean.split(' ').slice(0, 3).join(' ');
+    return title.length > 40 ? title.slice(0, 40).trim() + '…' : title;
 }
 
 function timeLabel(timestamp) {
@@ -909,13 +915,18 @@ function loadChats() {
         activeChatId = null;
     }
 
+    // Remove os exemplos antigos que possam ter ficado salvos neste navegador.
+    const SAMPLE_TITLES = ['Solstice Project Alpha', 'Zephyr Spectrum Draft', 'Hyperion Quantum Pass', 'Elysium Nebular Log'];
+    chats = chats
+        .filter(c => !(SAMPLE_TITLES.includes(c.title) && !(c.messages && c.messages.length)))
+        .map(c => {
+            if (!SAMPLE_TITLES.includes(c.title)) return c;
+            const firstUser = (c.messages || []).find(m => m.role === 'user');
+            return { ...c, title: firstUser ? shortTitle(firstUser.content) : 'Nova conversa' };
+        });
+
     if (!chats.length) {
-        chats = [
-            { id: uid(), title: 'Solstice Project Alpha', messages: [], createdAt: now(), updatedAt: now() },
-            { id: uid(), title: 'Zephyr Spectrum Draft', messages: [], createdAt: now(), updatedAt: now() },
-            { id: uid(), title: 'Hyperion Quantum Pass', messages: [], createdAt: now(), updatedAt: now() },
-            { id: uid(), title: 'Elysium Nebular Log', messages: [], createdAt: now(), updatedAt: now() }
-        ];
+        chats = [{ id: uid(), title: 'Nova conversa', messages: [], createdAt: now(), updatedAt: now() }];
     }
 
     if (!chats.some(c => c.id === activeChatId)) {
@@ -1278,6 +1289,7 @@ function updateSendState() {
 function setTheme(dark) {
     document.body.classList.toggle('dark-theme', dark);
     localStorage.setItem(THEME_STORAGE_KEY, dark ? 'dark' : 'light');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#ffffff');
 
     if (dark) {
         themeIconSidebar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`;
@@ -1366,16 +1378,73 @@ messagesList.addEventListener('click', event => {
 });
 
 attachmentFile.addEventListener('click', () => fileInput.click());
-attachmentNewChat.addEventListener('click', () => createChat(true));
-attachmentInfo.addEventListener('click', () => {
+
+function closeAttachmentSheet() {
     attachmentSheet.classList.remove('show');
     plusBtn.classList.remove('active');
-    toast('Histórico local + OpenRouter Free');
+}
+
+attachmentClear.addEventListener('click', () => {
+    closeAttachmentSheet();
+
+    const chat = currentChat();
+    if (!chat || !chat.messages.length) {
+        toast('A conversa já está vazia.');
+        return;
+    }
+    if (isGenerating) {
+        toast('Aguarde a resposta terminar.');
+        return;
+    }
+    if (!confirm('Limpar todas as mensagens desta conversa?')) return;
+
+    chat.messages = [];
+    chat.title = 'Nova conversa';
+    chat.updatedAt = now();
+    saveChats();
+    renderAll();
+    toast('Conversa limpa.');
+});
+
+attachmentExport.addEventListener('click', () => {
+    closeAttachmentSheet();
+
+    const chat = currentChat();
+    if (!chat || !chat.messages.length) {
+        toast('Não há mensagens para exportar.');
+        return;
+    }
+
+    const body = chat.messages.map(message => {
+        const who = message.role === 'user' ? 'Você' : 'AI-pi';
+        const when = new Date(message.at || Date.now()).toLocaleString('pt-BR');
+        return `${who} (${when}):\n${message.content}`;
+    }).join('\n\n');
+
+    const text = `${chat.title}\n\n${body}\n`;
+    const safeName = chat.title.replace(/[\\/:*?"<>|]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'conversa';
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeName}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast('Conversa exportada.');
 });
 
 fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
     if (!file) return;
+
+    if (!/\.txt$/i.test(file.name) && file.type !== 'text/plain') {
+        toast('Selecione um arquivo .txt.');
+        fileInput.value = '';
+        closeAttachmentSheet();
+        return;
+    }
 
     try {
         const text = await file.text();
