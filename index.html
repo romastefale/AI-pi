@@ -4,7 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>AI-pi</title>
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#ffffff">
+<script>
+/* Aplica o tema salvo ANTES da primeira pintura. Sem nada salvo = claro. */
+(function () {
+    try {
+        var dark = localStorage.getItem('aethelgard_nova_theme_v1') === 'dark';
+        document.documentElement.classList.toggle('dark-theme', dark);
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#000000' : '#ffffff');
+    } catch (e) {}
+})();
+</script>
 <meta name="description" content="AI-pi: assistente pessoal de IA.">
 
 <!-- Instalar na tela inicial (Safari e Chrome) -->
@@ -88,14 +98,17 @@ input:focus-visible { outline: none; }
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.25s ease, visibility 0s linear 0.25s;
     z-index: 90;
 }
 
 .sidebar-overlay.active {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition: opacity 0.25s ease, visibility 0s;
 }
 
 .sidebar {
@@ -252,8 +265,8 @@ input:focus-visible { outline: none; }
     height: 44px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.6);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     display: flex;
@@ -279,6 +292,32 @@ input:focus-visible { outline: none; }
     width: 11px;
     align-self: flex-start;
     margin-left: 14px;
+}
+
+/* FADE SUAVE NAS BORDAS: abaixo dos botões (z 30/80), acima do texto que rola.
+   Usa a mesma cor do fundo/barra do navegador, então acompanha o tema. */
+.edge-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    pointer-events: none;
+    background: var(--bg-main);
+    transition: background-color 0.3s ease;
+}
+
+.edge-fade-top {
+    top: 0;
+    height: calc(64px + env(safe-area-inset-top, 0px));
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.6) 40%, rgba(0,0,0,.22) 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.6) 40%, rgba(0,0,0,.22) 72%, transparent 100%);
+}
+
+.edge-fade-bottom {
+    bottom: 0;
+    height: calc(80px + env(safe-area-inset-bottom, 0px));
+    -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,.6) 40%, rgba(0,0,0,.22) 72%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,.6) 40%, rgba(0,0,0,.22) 72%, transparent 100%);
 }
 
 .chat-area {
@@ -530,8 +569,8 @@ input:focus-visible { outline: none; }
     width: min(720px, 100%);
     height: 56px;
     background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(5px) saturate(180%);
+    -webkit-backdrop-filter: blur(5px) saturate(180%);
     border-radius: 28px;
     display: flex;
     align-items: center;
@@ -624,8 +663,8 @@ input:focus-visible { outline: none; }
     bottom: calc(92px + env(safe-area-inset-bottom, 0px));
     left: 20px;
     background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(5px) saturate(180%);
+    -webkit-backdrop-filter: blur(5px) saturate(180%);
     border-radius: 20px;
     padding: 8px;
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
@@ -666,6 +705,8 @@ input:focus-visible { outline: none; }
 html { color-scheme: light; }
 html.dark-theme {
     --bg-main: #000000;
+    --text-main: #fafafa;
+    --text-muted: #a3a3a3;
     background-color: #000000;
     color-scheme: dark;
 }
@@ -688,8 +729,8 @@ body.dark-theme .menu-btn,
 body.dark-theme .floating-pill-input,
 body.dark-theme .attachment-sheet {
     background: rgba(38, 38, 38, 0.85);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(5px) saturate(180%);
+    -webkit-backdrop-filter: blur(5px) saturate(180%);
     border: 1px solid rgba(163, 163, 163, 0.15);
     color: #fafafa;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
@@ -801,6 +842,9 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
         <section class="chat-area" id="chatArea">
             <div class="messages-list" id="messagesList"></div>
         </section>
+
+        <div class="edge-fade edge-fade-top" aria-hidden="true"></div>
+        <div class="edge-fade edge-fade-bottom" aria-hidden="true"></div>
 
         <div class="attachment-sheet" id="attachmentSheet">
             <div class="sheet-item" id="attachmentClear">
@@ -1321,13 +1365,18 @@ function updateSendState() {
     }
 }
 
-// Remove e recria a meta: alguns navegadores só releem a cor quando a tag é nova.
+// Mantém UMA única <meta theme-color> (sem media) e só troca o content.
 function syncThemeColor(dark) {
-    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
-    const meta = document.createElement('meta');
-    meta.name = 'theme-color';
-    meta.content = dark ? '#000000' : '#ffffff';
-    document.head.appendChild(meta);
+    const color = dark ? '#000000' : '#ffffff';
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    let meta = metas[0];
+    for (let i = 1; i < metas.length; i++) metas[i].remove();
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', color);
 }
 
 function setTheme(dark) {
@@ -1346,8 +1395,8 @@ function setTheme(dark) {
 }
 
 function loadTheme() {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    setTheme(saved ? saved === 'dark' : true);
+    // Sem nada salvo (primeira visita) = claro.
+    setTheme(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
 }
 
 /* Eventos */
