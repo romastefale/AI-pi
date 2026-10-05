@@ -25,8 +25,9 @@
 
 html, body {
     width: 100%;
-    height: 100%;
+    height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: none;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
@@ -41,7 +42,7 @@ input:focus-visible { outline: none; }
 .app {
     display: flex;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     position: relative;
     background: transparent;
 }
@@ -209,27 +210,11 @@ input:focus-visible { outline: none; }
     height: 100%;
 }
 
-.top-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    z-index: 50;
-    pointer-events: none;
-}
-
-.top-bar * { pointer-events: auto; }
-
 .menu-btn {
     position: absolute;
     top: 16px;
     left: 20px;
-    z-index: 1000;
+    z-index: 80;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -266,6 +251,7 @@ input:focus-visible { outline: none; }
 .chat-area {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 80px 20px 120px;
     display: flex;
     flex-direction: column;
@@ -283,7 +269,7 @@ input:focus-visible { outline: none; }
 }
 
 .welcome {
-    min-height: calc(100vh - 220px);
+    min-height: calc(100dvh - 220px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -495,7 +481,7 @@ input:focus-visible { outline: none; }
 
 /* COMPOSER */
 .composer-container {
-    position: fixed;
+    position: absolute;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
@@ -601,7 +587,7 @@ input:focus-visible { outline: none; }
 
 /* ATTACHMENT SHEET */
 .attachment-sheet {
-    position: fixed;
+    position: absolute;
     bottom: calc(92px + env(safe-area-inset-bottom, 0px));
     left: 20px;
     background: rgba(255, 255, 255, 0.82);
@@ -615,6 +601,7 @@ input:focus-visible { outline: none; }
     gap: 3px;
     z-index: 40;
     width: 220px;
+    pointer-events: auto;
 }
 
 .attachment-sheet.show {
@@ -710,7 +697,6 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 
 @media (max-width: 720px) {
     .sidebar { width: min(330px, calc(100vw - 16px)); }
-    .top-bar { padding: 0 10px; }
     .chat-area { padding: 80px 13px 120px; }
     .messages-list { width: 100%; }
     .user-bubble { max-width: 88%; }
@@ -765,12 +751,10 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 
     <main class="main-content">
 
-        <header class="top-bar">
-            <button class="menu-btn" id="menuBtn" title="Menu" aria-label="Abrir menu">
-                <div class="menu-line"></div>
-                <div class="menu-line short"></div>
-            </button>
-        </header>
+        <button class="menu-btn" id="menuBtn" title="Menu" aria-label="Abrir menu">
+            <div class="menu-line"></div>
+            <div class="menu-line short"></div>
+        </button>
 
         <section class="chat-area" id="chatArea">
             <div class="messages-list" id="messagesList"></div>
@@ -825,13 +809,13 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 
     </main>
 
-    <div id="toast" style="position:fixed;z-index:120;left:50%;bottom:95px;transform:translate(-50%,10px);padding:9px 12px;background:#222;color:#fff;border-radius:11px;font-size:11px;opacity:0;pointer-events:none;transition:.18s ease;">Mensagem</div>
+    <div id="toast" style="position:absolute;z-index:120;left:50%;bottom:95px;transform:translate(-50%,10px);padding:9px 12px;background:#222;color:#fff;border-radius:11px;font-size:11px;opacity:0;pointer-events:none;transition:.18s ease;">Mensagem</div>
     <input id="fileInput" type="file" class="hidden" accept=".txt,.md,.csv,.json,.html,.css,.js" />
 
 </div>
 
 <script>
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 const OPENROUTER_MODEL = "openrouter/free";
 
 let chats = [];
@@ -1054,7 +1038,8 @@ function renderAssistantText(text) {
     let src = escapeHTML(text || '');
     const codeBlocks = [];
 
-    src = src.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    src = src.replace(/
+```([\w-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
         const id = codeBlocks.push({ lang: lang || 'texto', code }) - 1;
         return `@@CODEBLOCK_${id}@@`;
     });
