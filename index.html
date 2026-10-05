@@ -815,7 +815,7 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 </div>
 
 <script>
-const OPENROUTER_API_KEY = "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";
+const RAILWAY_API_URL = "https://SEU-DOMINIO-RAILWAY/api/chat";
 const OPENROUTER_MODEL = "openrouter/free";
 
 let chats = [];
@@ -1136,7 +1136,7 @@ function addAssistantMessage(text) {
 }
 
 function apiReady() {
-    return !!OPENROUTER_API_KEY && !OPENROUTER_API_KEY.includes('COLE_SUA_CHAVE');
+    return !!RAILWAY_API_URL && !RAILWAY_API_URL.includes('SEU-DOMINIO-RAILWAY');
 }
 
 function buildMessages() {
@@ -1154,20 +1154,17 @@ function buildMessages() {
 
 async function askOpenRouter(messages) {
     if (!apiReady()) {
-        throw new Error('A chave do OpenRouter ainda não foi colocada no index.html.');
+        throw new Error('O endpoint do Railway ainda não foi configurado no index.html.');
     }
 
     controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const response = await fetch(RAILWAY_API_URL, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': location.href,
-                'X-Title': 'AI-pi'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 model: OPENROUTER_MODEL,
