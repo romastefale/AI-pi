@@ -907,9 +907,10 @@ body.dark-theme .history-delete:hover { background: rgba(255,255,255,.08); color
 </div>
 
 <script>
-// TROQUE pelo domínio do seu serviço no Railway (termina em /api/chat).
-// Ex.: "https://ai-pi-production.up.railway.app/api/chat"
-const RAILWAY_API_URL = "https://ai-pi.up.railway.app/api/chat";
+// A chave vem do secret OPENROUTER_API_KEY do GitHub Actions: o workflow
+// .github/workflows/deploy.yml troca o marcador abaixo no momento do deploy.
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_API_KEY = "__OPENROUTER_API_KEY__";
 const OPENROUTER_MODEL = "openrouter/free";
 
 let chats = [];
@@ -1242,7 +1243,7 @@ function addAssistantMessage(text) {
 }
 
 function apiReady() {
-    return !!RAILWAY_API_URL && !RAILWAY_API_URL.includes('SEU-DOMINIO-RAILWAY');
+    return !!OPENROUTER_API_KEY && !OPENROUTER_API_KEY.includes('__OPENROUTER_API_KEY__');
 }
 
 function buildMessages() {
@@ -1260,16 +1261,17 @@ function buildMessages() {
 
 async function askOpenRouter(messages) {
     if (!apiReady()) {
-        throw new Error('O endpoint do Railway ainda não foi configurado no index.html.');
+        throw new Error('A chave da API não foi injetada. Configure o secret OPENROUTER_API_KEY no GitHub e rode o workflow de deploy.');
     }
 
     controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
-        const response = await fetch(RAILWAY_API_URL, {
+        const response = await fetch(OPENROUTER_API_URL, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -1295,7 +1297,7 @@ async function askOpenRouter(messages) {
             throw new Error('A requisição foi interrompida ou demorou demais.');
         }
         if (error instanceof TypeError) {
-            throw new Error('Não foi possível conectar ao servidor. Confira a URL do Railway e a variável ALLOWED_ORIGIN.');
+            throw new Error('Não foi possível conectar ao OpenRouter. Confira sua conexão.');
         }
         throw error;
     } finally {
