@@ -22,11 +22,20 @@ jobs:
 
       - run: npm install
 
-      # O repositório é a fonte da verdade; o CI começa sem estado local, então força o push.
-      - name: Push modules
+      # Sincroniza o estado local com a nuvem antes do push (sem --force).
+      - name: Fetch cloud state
         env:
           TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
-        run: npx tgcloud push --force
+        run: npx tgcloud fetch
+
+      # O push imprime o endereço do Mini App; a saída vai também para o resumo do run.
+      - name: Push modules and Mini App
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+        run: |
+          set -o pipefail
+          npx tgcloud push 2>&1 | tee push.log
+          { echo '## tgcloud push'; echo '```'; cat push.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       # Aplica só mudanças seguras (tabelas/colunas/índices novos); drops ficam para rodar à mão.
       - name: Migrate database
