@@ -1,6 +1,6 @@
 // Service worker mínimo do AI-pi: deixa o app instalável e abrir sem internet.
 // Rede primeiro: com internet você sempre recebe a versão mais nova do site.
-// Só mexe em arquivos do próprio site (GET). As chamadas ao OpenRouter não passam por aqui.
+// Só mexe em arquivos do próprio site (GET). As chamadas ao servidor (endpoints) não passam por aqui.
 const CACHE = 'ai-pi-v1';
 const ASSETS = [
   './',

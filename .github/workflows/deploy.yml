@@ -1,27 +1,24 @@
-name: Deploy to GitHub Pages
+name: Deploy Telegram Serverless
 
 on:
   push:
     branches: [main]
+    paths: ['tgcloud/**', 'app/**', 'tgcloud.jsonc', 'package.json', '.github/workflows/deploy.yml']
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: tgcloud-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Inject OpenRouter key
         env:
@@ -31,19 +28,27 @@ jobs:
             echo "::error::Secret OPENROUTER_API_KEY não configurado."
             exit 1
           fi
-          mkdir _site
-          cp -r index.html sw.js manifest.webmanifest *.png *.jpg favicon.ico _site/
-          python3 - <<'PY'
-          import os
-          p = '_site/index.html'
-          s = open(p, encoding='utf-8').read()
-          s = s.replace('__OPENROUTER_API_KEY__', os.environ['OPENROUTER_API_KEY'])
-          open(p, 'w', encoding='utf-8').write(s)
-          PY
+          node -e "
+            const fs = require('fs');
+            const p = 'tgcloud/lib/config.js';
+            fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('__OPENROUTER_API_KEY__', process.env.OPENROUTER_API_KEY));
+          "
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: npm install
+
+      # O repositório é a fonte da verdade; o CI começa sem estado local, então força o push.
+      - name: Push modules
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+        run: npx tgcloud push --force
+
+      # Aplica só mudanças seguras (tabelas/colunas/índices novos); drops ficam para rodar à mão.
+      - name: Migrate database
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+        run: npx tgcloud migrate --safe
+
+      - name: Sync webhook
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+        run: npx tgcloud webhook sync

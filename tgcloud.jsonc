@@ -1,0 +1,5 @@
+{
+  "$schema": "./node_modules/@tgcloud/cli/schema/tgcloud.json",
+  // O Mini App é estático (sem build): a pasta app/ é publicada como está.
+  "static": "app"
+}
