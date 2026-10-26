@@ -20,20 +20,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Inject OpenRouter key
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          if [ -z "$OPENROUTER_API_KEY" ]; then
-            echo "::error::Secret OPENROUTER_API_KEY não configurado."
-            exit 1
-          fi
-          node -e "
-            const fs = require('fs');
-            const p = 'tgcloud/lib/config.js';
-            fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('__OPENROUTER_API_KEY__', process.env.OPENROUTER_API_KEY));
-          "
-
       - run: npm install
 
       # O repositório é a fonte da verdade; o CI começa sem estado local, então força o push.

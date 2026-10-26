@@ -1,6 +1,3 @@
-// OPENROUTER_API_KEY é substituída pelo workflow de deploy (.github/workflows/deploy.yml)
-// com o secret do GitHub Actions. Não coloque a chave real aqui nem faça commit dela.
-export const OPENROUTER_API_KEY = '__OPENROUTER_API_KEY__';
 export const OPENROUTER_MODEL = 'openrouter/free';
 export const HISTORY_LIMIT = 24;
 

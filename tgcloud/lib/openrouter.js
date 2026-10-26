@@ -1,15 +1,13 @@
 import { fetch } from 'sdk';
-import { OPENROUTER_API_KEY, OPENROUTER_MODEL } from './config.js';
+import { OPENROUTER_MODEL } from './config.js';
 
-export async function askOpenRouter(messages) {
-  if (OPENROUTER_API_KEY.includes('__OPENROUTER_API_KEY__')) {
-    throw new Error('Chave da API não injetada. Configure o secret OPENROUTER_API_KEY e refaça o deploy.');
-  }
+export const NO_KEY_MESSAGE = 'Você ainda não enviou sua chave do OpenRouter. Mande a chave (sk-or-...) para o bot, em conversa privada.';
 
+export async function askOpenRouter(messages, apiKey) {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'X-Title': 'AI-pi',
     },

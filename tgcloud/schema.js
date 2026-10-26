@@ -10,3 +10,10 @@ export const messages = table('messages', {
 }, (t) => ({
   chatIdx: index('idx_messages_chat').on(t.chatId, t.id),
 }));
+
+// Chave do OpenRouter de cada usuário, enviada por ele ao bot (só em chat privado).
+export const apiKeys = table('api_keys', {
+  userId:  integer('user_id').primaryKey(),
+  key:     text('key').notNull(),
+  updated: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+});
